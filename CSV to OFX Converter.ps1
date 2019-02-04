@@ -16,6 +16,12 @@
 #Creating File
 $filename = read-host "Enter a name for the OFX file (without any file extension)"
 
+	#getting balance info
+	write-host "Now you will be asked questions about the account balance data to include in the file" -ForegroundColor Red
+	$baldate = read-host "Enter the balance date in the format 20190102 (eg. 2nd Janurary 2019)"
+	$ledgerbal = read-host "Enter the Account Balance at that date"
+	$availbal = read-host "Enter the Available Balance at that date"
+
 $filenamext = $filename + ".txt"
 $filenameofx = $filename + ".ofx"
 
@@ -61,6 +67,8 @@ NEWFILEUID:NONE
 <BANKTRANLIST>
 <DTSTART>20190102
 <DTEND>20190130}
+
+write-host "Header Written"
 
 #Importing CSV data
 [string]$MyDirectory = Get-Location
@@ -109,13 +117,43 @@ function Line-Writer {
 	Line-Writer
 	}
 	else {
-	write-host "Conversion is done"
-		#renaming the .txt file to .ofx
-		Rename-Item -Path $filenamext -NewName $filenameofx
-	pause
+	write-host "Lines Written"
 	}
 }
 
 #Setting the line iteration counter to zero and triggering the conversion function
 [int]$global:Lineit = 0
 Line-Writer
+
+#Writing footer
+	#Creating lines
+	$line1 = "</BANKTRANLIST>"
+	$line2 = "<LEDGERBAL>"
+	$line3 = "<BALAMT>" + $ledgerbal
+	$line4 = "<DTASOF>" + $baldate
+	$line5 = "</LEDGERBAL>"
+	$line6 = "<AVAILBAL>"
+	$line7 = "<BALAMT>" + $availbal
+	$line8 = $line4
+
+	#Writing the lines to the file
+	$line1 | Out-File $filenamext -Append -Encoding ASCII
+	$line2 | Out-File $filenamext -Append -Encoding ASCII
+	$line3 | Out-File $filenamext -Append -Encoding ASCII
+	$line4 | Out-File $filenamext -Append -Encoding ASCII
+	$line5 | Out-File $filenamext -Append -Encoding ASCII
+	$line6 | Out-File $filenamext -Append -Encoding ASCII
+	$line7 | Out-File $filenamext -Append -Encoding ASCII
+	$line8 | Out-File $filenamext -Append -Encoding ASCII
+	
+	#finishing off the closing tags in bulk
+	Add-Content $filenamext {</AVAILBAL>
+</STMTRS>
+</STMTTRNRS>
+</BANKMSGSRSV1>
+</OFX>}
+
+#renaming the .txt file to .ofx
+Rename-Item -Path $filenamext -NewName $filenameofx
+write-host "Footer written"
+write-host "Conversion Completed"
